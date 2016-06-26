@@ -1,0 +1,297 @@
+#########################################################
+#														#
+#		ORB Specification 0.0.2 (BETA/DRAFT)			#
+#														#
+#########################################################
+#														#
+#	Revision 1											#
+#	Publishing date: January, 7th, 2016					#
+#	Homepage: www.orbital-apps.com						#
+#														#
+#########################################################
+
+TODO: DEFINE PARAMETERS XXXXXXXXXXXXXXXXXX
+TODO: change parameters content to lowercase
+TODO: parameters must be in the first 100 lines
+
+###########################################################################################################################
+0. Table of contents
+
+1. 			Intro
+2. 			ISO Header
+2.1 		ORB Header metadata
+2.1.1.							 / Required and optional parameters
+2.1.2. 							 / Notes
+2.1.3. 							 / Examples
+
+			How it works with "ORB Launcher"
+			How it works with "ORB embedded script"
+			Copyright
+			References and Credits
+
+###########################################################################################################################
+1.	Intro 
+
+An ORB ( .orb ) file is in reality an ISO9660 file (commonly known as .iso files), with specific contents.
+
+Inside the ISO there is a script named autorun.sh (or just "autorun" - both variants are supported) and an application.
+The application is either in a folder (commonly named "app") or in a compressed file, named "app.squashfs".
+
+When a user has the "ORB Launcher" installed on their system and they double-click any .orb file, the ISO/ORB is automatically mounted and the autorun.sh is executed, launching the application.
+
+###########################################################################################################################
+2.	ISO contents
+
+The iso file will contain the following contents
+
+0_mounting_tools.txt		(required)
+about.txt					(optional)
+app.squashfs				(optional)
+app_logo.png				(optional)
+autorun.inf					(optional)
+autorun.sh					(required)
+orb_specification.txt		(optional)
+
+(possibly other files)
+
+Example of an ORB file:
+	 ___________________________________________________________________________________________________________________
+	|													|																|
+	|			## ISO Header ##						|				## ISO contents ##								|
+	|			(always 32768 bytes)					|																|
+	|													|																|
+	|	#!/bin/bash										|																|
+	|	# "Embedded Launcher" bash script				|		0_mounting_tools.txt									|
+	|													|																|
+	|	ORB_METADATA_START=								|																|
+	|	ORB_SPECIFICATION_VERSION=0.0.2					|																|
+	|	ORB_TOTAL_SIZE_BYTES=20930548					|		app.squashfs											|
+	|	(...)											|																|
+	|	ORB_METADATA_END=								|																|
+	|													|																|
+	|	echo "Starting the script..."					|		autorun.sh												|
+	|	(...)											|																|
+	|	mount_iso										|																|
+	|	run_autorun_from_iso							|																|
+	|	(...)											|																|
+	|	exit											|																|
+	|___________________________________________________|_______________________________________________________________|
+
+	
+	
+	
+Alternative representation:
+
+	
+												ISO Header (always 32768 bytes)																					ISO contents (variable size)
+															^																												^
+															|																												|
+															|																												|
+	   ------------------------------------------------------------------------------------------------------------------------------------------	   -------------------------------------------------------
+	  /																																			 \	  /														  \
+	 /																																			  \  /														   \
+	/______________________________________________________________________________________________________________________________________________\/___________________________________________________________\
+	|																																			   |															|
+	|#!/bin/bash (...) ORB_METADATA_START= (...) echo "Starting the script" (...) mount_iso (...) run_autorun_from_iso (...) exit_script		   | 0_mounting_tools.txt + app.squashfs + autorun.sh			|
+	|______________________________________________________________________________________________________________________________________________|____________________________________________________________|
+	
+	
+	
+	
+	(...)  --> In this context, this represents a new line or another ommited content
+	
+	
+###########################################################################################################################
+2.	ISO contents - Compressed ORB
+
+If the ORB file uses compression, the app will be compressed into the file app.squashfs, in the SQUASHFS 4 format
+In this case the autorun.sh inside the ISO will not (directly) run the app, but instead it will use the tools from the file 0_mounting_tools.txt
+			(see section "Alternative launcher - Technical explanation"),
+			it will mount the app.squashfs file and launch the autorun.sh file contained inside.
+
+###########################################################################################################################
+2.	ISO HEADER
+
+
+The header of ISO files has a size of 32768 bytes (1) and is typically left blank/empty.
+
+In ORB files the ISO header is used to store an "Embedded Launcher" bash script wich itself contains metadata.
+
+
+
+###########################################################################################################################
+2.1 ORB metadata
+
+The very first line of an ORB file is the defining the file as a script, and it must be this:
+
+#!/bin/bash
+
+Note: Currently all ORB files must use the specific line above.
+
+The following lines of the ORB file should contain the following parameters:
+
+ORB_METADATA_START= ------------------------------------------> (Required)
+ORB_SPECIFICATION_VERSION=	----------------------------------> (Required)
+ORB_TOTAL_SIZE_BYTES= ----------------------------------------> (Required)
+ORB_CREATION_TIMESTAMP_UNIX= ---------------------------------> (Required)
+ORB_CREATION_TIMESTAMP_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND= ----> (Required)
+ORB_FILESYSTEM= ----------------------------------------------> (Required)
+ORB_CONTAINS_SQUASHFS= ---------------------------------------> (Required, but only if the ORB contains the app.squashfs)
+ORB_REQUIRES_ROOT= -------------------------------------------> (Required, but only if the App requires or tries to run with root permissions)
+ORB_APP_HAS_GUI= ---------------------------------------------> (optional)
+ORB_APP_REQUIRES_CLI= ----------------------------------------> (optional)
+ORB_IS_PORTABLE_APP= -----------------------------------------> (optional)
+ORB_IS_INSTALLER= --------------------------------------------> (optional)
+ORB_METADATA_END= --------------------------------------------> (optional)
+
+
+###########################################################################################################################
+2.1.1 ORB metadata / Notes
+
+The first parameter must always be "ORB_METADATA_START=" and the last one must be "ORB_METADATA_END="
+It is allowed to change the order of all parameters (with the exception of ORB_METADATA_START and ORB_METADATA_END) or ommit the optional parameters, but it is recommended to leave the order unchanged.
+
+It is also allowed to insert other content (comments, etc) between the parameters, like this:
+
+ORB_METADATA_START=
+ORB_SPECIFICATION_VERSION=0.0.2
+ORB_TOTAL_SIZE_BYTES=2520948600
+# This is a big app because we bundle all the artwork
+ORB_CREATION_TIMESTAMP_UNIX=1452127008
+ORB_CREATION_TIMESTAMP_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND=2016-01-07-00-36-48
+ORB_FILESYSTEM=ISO9660
+ORB_METADATA_END=
+
+However, a line with a parameter must only contain the parameter plus the corresponding information, so the following is not allowed:
+
+	ORB_TOTAL_SIZE_BYTES=2520948600 # This is a big app because we bundle all the artwork
+
+Not allowed:
+	# This is a big app because we bundle all the artwork	#	ORB_TOTAL_SIZE_BYTES=2520948600
+
+	
+The parameter must also be right at the start of a line, so the following is not allowed:
+	
+	#ORB_TOTAL_SIZE_BYTES=2520948600
+
+
+###########################################################################################################################
+2.1.3 ORB metadata / Examples
+
+Example of the first 15 lines of an ORB file:
+
+#!/bin/bash
+# Web: www.orbital-apps.com
+ORB_METADATA_START=
+ORB_SPECIFICATION_VERSION=0.0.2
+ORB_TOTAL_SIZE_BYTES=2820948
+ORB_CREATION_TIMESTAMP_UNIX=1452127008
+ORB_CREATION_TIMESTAMP_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND=2016-01-07-00-36-48
+ORB_FILESYSTEM=ISO9660
+ORB_CONTAINS_SQUASHFS=TRUE
+ORB_REQUIRES_ROOT=FALSE
+ORB_APP_HAS_GUI=TRUE
+ORB_APP_REQUIRES_CLI=FALSE
+ORB_IS_PORTABLE_APP=TRUE
+ORB_IS_INSTALLER=FALSE
+ORB_METADATA_END=
+
+
+###########################################################################################################################
+How it all works (with ORB-Launcher installed)
+
+If a user as the ORB Launcher installed, the following will happen:
+Files with the .orb extension are associated with the ORB-Launcher, so the ORB-Launcher will automatically start after the user double-clicks the .orb file
+	
+	
+	1 - ORB-Launcher checks to see if the file is "whitelisted"
+	2 - If the file is NOT whitelisted, as an additional step, the ORB-Launcher asks the user to confirm that they want to run the App
+	3 - The ORB/ISO is mounted with FUSE/fuseiso
+	4 - The file autorun.sh is launched from inside the mounted ISO
+
+For compressed ORB files (files that contain the parameter: ORB_CONTAINS_SQUASHFS=TRUE) there is an additional step
+
+
+	1 - ORB-Launcher checks to see if the file is "whitelisted"
+	2 - If the file is NOT whitelisted, as an additional step, the ORB-Launcher asks the user to confirm that they want to run the App
+	3 - The ORB/ISO is mounted with FUSE/fuseiso
+	4 - if app.squashfs exists inside the ISO, that file is mounted with squashfuse
+	5 - The file autorun.sh is launched from inside the mounted squashfs
+
+	
+###########################################################################################################################
+Alternative launcher - For systems without the "ORB Launcher"
+
+If a user does not have the ORB-Launcher installed on their system, they can run the .orb app in an alternative way.
+
+For example:
+
+		chmod +x /home/alex/firefox.orb
+		/home/alex/firefox.orb
+
+Explanation:
+This will mark the file as executable and then launch it. (Because the first line of an .orb file starts with #!/bin/bash the .orb will be recognized as a bash script and run)
+
+
+
+Or as an alternative, just run:
+
+		bash /home/alex/firefox.orb
+
+Explanation:
+This will directly launch the .orb with bash, not requiring the .orb to be marked as executable
+
+###########################################################################################################################
+Alternative launcher - Technical explanation
+
+When a user tries to run an .orb file with the following commands:
+
+		chmod +x /home/alex/firefox.orb
+		/home/alex/firefox.orb
+		
+
+This is what happens:
+
+ 1 - Because the first line of an .orb file starts with #!/bin/bash (the "Embedded script") the .orb will be recognized as a bash script and run with bash
+ 2 - The "Embedded script" will then "scan" the ORB/ISO and extract the file "0_mounting_tools.txt" from the ISO/ORB.
+				This is possible (in bash AND without first mounting the ISO) because the ISO9660 format stores the content of files in a sequencial manner.
+				Knowing this, we have packaged fuseiso/squashfuse (the "mounting tools") into a tar.gz file,
+				converted it into base64, and added a "starting string" and "Ending string" to the file,
+				so bash can use grep and other tools to recognize the start and end of the "text" (see example bellow)
+				
+				
+ 3- Once the file 0_mounting_tools.txt is extracted,
+	the script just needs to remove the "start string" and the "end string" and convert from base64 back into the file mounting_tools.tar.gz
+	Which is then easily extracted with tar
+ 4- Now that fuseiso and squashfuse are available, the "Embedded script" just needs to mount the ISO with fuseiso and run "autorun.sh"
+
+
+Partial contents of an example of "0_mounting_tools.txt"
+
+
+_START_ORB_MOUNTING_TOOLS_BASE64_
+H4sIAMHLgVYAA9R9e3wURfL4bFhggciuGCFqPBddNWjUBCImGs+AeakBg4aA5yOEPEh0SXLJLi8j
+BDaLjMNqVMTnKSqeqKgoqIgoSYAEEDVBBBRQTlFnWR4RFAJK9ldVXbM7O8B9v5/P7/fPz7uhtqZ7
+(...)
+(Some lines ommited)
+(...)
+ dP2wKKoZggiqMUKNHVBNdsxYJkss1fQBcJkCx0J3wZSgZ8Z6LJCmy3woMUL6MU9lZD8lPXasMj0+
+XB5IOG0LMoTpTIsjzCKtmZQrmy3zjEYSP2twzQzRJQNKKMuAJeJpBn/LKwLs8thnFhWk2HixAN40
+e/XP1z9f/3z98/XP18d5/T9SEmc6AGgMAA==
+_END_ORB_MOUNTING_TOOLS_BASE64_
+ 
+ 
+ 
+ 
+###########################################################################################################################
+Copyright of this "ORB Specification text"
+####################################
+
+Copyright / 2016 / Orbital-Apps.com
+
+Permission is granted to distribute this specification text, provided all contents remain unmodified/unedited.
+
+###########################################################################################################################
+References and credits
+######################
+(1)	http://www.rtems.com/wiki/index.php/ISO9660_Filesystem (now offline)
