@@ -1,35 +1,41 @@
 #########################################################
-#														#
-#		ORB Specification 0.0.2 (BETA/DRAFT)			#
-#														#
+#                                                       #
+#        ORB Specification 0.0.2 (BETA/DRAFT)           #
+#                                                       #
+#                 OPEN RUNNABLE BUNDLE                  #
+#                                                       #
 #########################################################
-#														#
-#	Revision 1											#
-#	Publishing date: January, 7th, 2016					#
-#	Homepage: www.orbital-apps.com						#
-#														#
+#                                                       #
+#       Revision 2                                      #
+#       Publishing date: 14th January, 2016              #
+#       Homepage: www.orbital-apps.com                  #
+#                                                       #
 #########################################################
 
-TODO: DEFINE PARAMETERS XXXXXXXXXXXXXXXXXX
-TODO: change parameters content to lowercase
-TODO: parameters must be in the first 100 lines
 
-###########################################################################################################################
-0. Table of contents
 
-1. 			Intro
-2. 			ISO Header
-2.1 		ORB Header metadata
-2.1.1.							 / Required and optional parameters
-2.1.2. 							 / Notes
-2.1.3. 							 / Examples
 
-			How it works with "ORB Launcher"
-			How it works with "ORB embedded script"
-			Copyright
-			References and Credits
+###########################################################################################
+Table of contents
 
-###########################################################################################################################
+1.   Intro
+2.   Definitions
+3.   ISO Contents - Intro
+3.1. ISO contents - Compressed ORB
+3.2. ISO contents - ISO Header
+4.1. ORB metadata - Intro
+4.2. ORB metadata / details
+4.3. ORB metadata / Additional notes
+4.4. ORB metadata / Examples
+5.   "Portable Mode
+6.1. How it all works (with ORB-Launcher installed)
+6.2. Alternative launcher - For systems without the "ORB Launcher"
+6.3. ORB Embedded Script - An alternative launcher
+7.1. Extracting/Inspecting the contents of an ORB/ISO file
+7.2. Extracting/Inspecting the contents of app.squashfs
+8.   Copyright
+
+###########################################################################################
 1.	Intro 
 
 An ORB ( .orb ) file is in reality an ISO9660 file (commonly known as .iso files), with specific contents.
@@ -39,69 +45,109 @@ The application is either in a folder (commonly named "app") or in a compressed 
 
 When a user has the "ORB Launcher" installed on their system and they double-click any .orb file, the ISO/ORB is automatically mounted and the autorun.sh is executed, launching the application.
 
-###########################################################################################################################
-2.	ISO contents
+###########################################################################################
+2.	Definitions
 
-The iso file will contain the following contents
 
-0_mounting_tools.txt		(required)
-about.txt					(optional)
-app.squashfs				(optional)
-app_logo.png				(optional)
-autorun.inf					(optional)
-autorun.sh					(required)
-orb_specification.txt		(optional)
+        ORB / Open Runnable Bundle / .orb / ORB App
+                A file format (container) for Linux Applications, based on the ISO-9660
+                filesystem.
 
-(possibly other files)
+	ORB / ISO
+                Same as above, sometimes ORB and ISO are used
+                interchangeably in this document,
+                as currently all ORB files are ISO9660 files.
+
+        ISO 9660 / ISO9660 / ISO-9660 / ECMA-119
+                A file format designed primarily for CDs,
+                Published by the International Organization for Standardization.
+                Now currently used for all .orb files.
+		
+
+        ISO Header / ISO-header
+                The first 32768 bytes of an ISO9660 file.
+
+
+        ORB Metadata
+
+
+        Main Application / Main-App
+                The Application that will be used by the end-users,
+                that is stored inside the ISO container.
+                It is usually a GUI/graphical Application.
+
+        ORB Launcher / ORB-Launcher
+                The Application responsible for mounting the ISO/ORB and launching the
+                App contained inside.
+
+
+        ORB Embedded Script / ORB-Embedded-Script
+                A script in the ISO Header which allows the whole ORB/ISO file to be
+                recognised as a script, allowing it to be executed even on a system without
+                the ORB Launcher
+
+        Portable Home / portable_home
+                A folder ( always named portable_home )
+                that users can create in the same folder of their .orb files
+                this will allow all .orb apps to save data in a "portable" manner,
+                for example, on a USB flash drive or external Hard Drive.
+
+###########################################################################################
+2.	ISO contents - Intro
+
+The iso file will contain the following contents:
+
+0_mounting_tools.txt
+app.squashfs
+app_logo.png
+autorun.inf
+autorun / autorun.sh
+(possibly other contents)
+
 
 Example of an ORB file:
-	 ___________________________________________________________________________________________________________________
-	|													|																|
-	|			## ISO Header ##						|				## ISO contents ##								|
-	|			(always 32768 bytes)					|																|
-	|													|																|
-	|	#!/bin/bash										|																|
-	|	# "Embedded Launcher" bash script				|		0_mounting_tools.txt									|
-	|													|																|
-	|	ORB_METADATA_START=								|																|
-	|	ORB_SPECIFICATION_VERSION=0.0.2					|																|
-	|	ORB_TOTAL_SIZE_BYTES=20930548					|		app.squashfs											|
-	|	(...)											|																|
-	|	ORB_METADATA_END=								|																|
-	|													|																|
-	|	echo "Starting the script..."					|		autorun.sh												|
-	|	(...)											|																|
-	|	mount_iso										|																|
-	|	run_autorun_from_iso							|																|
-	|	(...)											|																|
-	|	exit											|																|
-	|___________________________________________________|_______________________________________________________________|
+	 _______________________________________________________________________________
+	|           ( ISO Header )             |       ( ISO contents )                 |
+	|         (always 32768 bytes)         |                                        |
+	|                                      |                                        |
+	|  #!/bin/bash                         |                                        |
+	|  # "Embedded Launcher" bash script   |  0_mounting_tools.txt                  |
+	|                                      |                                        |
+	|  ORB_METADATA_START=                 |  app.squashfs                          |
+	|  ORB_SPECIFICATION_VERSION=0.0.2     |                                        |
+	|  ORB_TOTAL_SIZE_BYTES=20930548       |  autorun.sh                            |
+	|  (...)                               |                                        |
+	|  ORB_METADATA_END=                   |                                        |
+	|                                      |                                        |
+	|  echo "Starting the script..."       |                                        |
+	|  (...)                               |                                        |
+	|  mount_iso                           |                                        |
+	|  run_autorun_from_iso                |                                        |
+	|  (...)                               |                                        |
+	|  exit                                |                                        |
+	|______________________________________|________________________________________|
 
-	
-	
-	
+(...)  --> In this context, this represents a new line or omitted content
+
+
+
+
 Alternative representation:
 
-	
-												ISO Header (always 32768 bytes)																					ISO contents (variable size)
-															^																												^
-															|																												|
-															|																												|
-	   ------------------------------------------------------------------------------------------------------------------------------------------	   -------------------------------------------------------
-	  /																																			 \	  /														  \
-	 /																																			  \  /														   \
-	/______________________________________________________________________________________________________________________________________________\/___________________________________________________________\
-	|																																			   |															|
-	|#!/bin/bash (...) ORB_METADATA_START= (...) echo "Starting the script" (...) mount_iso (...) run_autorun_from_iso (...) exit_script		   | 0_mounting_tools.txt + app.squashfs + autorun.sh			|
-	|______________________________________________________________________________________________________________________________________________|____________________________________________________________|
-	
-	
-	
-	
-	(...)  --> In this context, this represents a new line or another ommited content
-	
-	
-###########################################################################################################################
+
+           ISO Header (always 32768 bytes)            ISO contents (variable size)
+                          |                                        |
+      ---------------------------------------      ----------------------------------
+     /                                       \    /                                  \
+    /                                         \  /                                    \
+   /___________________________________________\/______________________________________\
+   |                                            |                                      |
+   |#!/bin/bash (ORB metadata) (rest of script) | app.squashfs + autorun.sh (+ others) |
+   |____________________________________________|______________________________________|
+
+
+
+###########################################################################################
 2.	ISO contents - Compressed ORB
 
 If the ORB file uses compression, the app will be compressed into the file app.squashfs, in the SQUASHFS 4 format
@@ -109,18 +155,19 @@ In this case the autorun.sh inside the ISO will not (directly) run the app, but 
 			(see section "Alternative launcher - Technical explanation"),
 			it will mount the app.squashfs file and launch the autorun.sh file contained inside.
 
-###########################################################################################################################
-2.	ISO HEADER
+###########################################################################################
+2.	ISO header
 
 
 The header of ISO files has a size of 32768 bytes (1) and is typically left blank/empty.
 
-In ORB files the ISO header is used to store an "Embedded Launcher" bash script wich itself contains metadata.
+In ORB files the ISO header is used to store an "Embedded Launcher" bash script which
+itself contains metadata.
 
 
 
-###########################################################################################################################
-2.1 ORB metadata
+###########################################################################################
+2.1 ORB metadata - intro
 
 The very first line of an ORB file is the defining the file as a script, and it must be this:
 
@@ -130,28 +177,150 @@ Note: Currently all ORB files must use the specific line above.
 
 The following lines of the ORB file should contain the following parameters:
 
-ORB_METADATA_START= ------------------------------------------> (Required)
-ORB_SPECIFICATION_VERSION=	----------------------------------> (Required)
-ORB_TOTAL_SIZE_BYTES= ----------------------------------------> (Required)
-ORB_CREATION_TIMESTAMP_UNIX= ---------------------------------> (Required)
-ORB_CREATION_TIMESTAMP_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND= ----> (Required)
-ORB_FILESYSTEM= ----------------------------------------------> (Required)
-ORB_CONTAINS_SQUASHFS= ---------------------------------------> (Required, but only if the ORB contains the app.squashfs)
-ORB_REQUIRES_ROOT= -------------------------------------------> (Required, but only if the App requires or tries to run with root permissions)
-ORB_APP_HAS_GUI= ---------------------------------------------> (optional)
-ORB_APP_REQUIRES_CLI= ----------------------------------------> (optional)
-ORB_IS_PORTABLE_APP= -----------------------------------------> (optional)
-ORB_IS_INSTALLER= --------------------------------------------> (optional)
-ORB_METADATA_END= --------------------------------------------> (optional)
+ORB_METADATA_START=
+ORB_SPECIFICATION_VERSION=
+ORB_TOTAL_SIZE_BYTES=
+ORB_CREATION_TIMESTAMP_UNIX=
+ORB_CREATION_TIMESTAMP_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND=
+ORB_FILESYSTEM=
+ORB_CONTAINS_SQUASHFS=
+ORB_REQUIRES_ROOT=
+ORB_APP_HAS_GUI=
+ORB_APP_REQUIRES_CLI=
+ORB_IS_PORTABLE_APP=
+ORB_IS_INSTALLER=
+ORB_METADATA_END=
 
-
-###########################################################################################################################
-2.1.1 ORB metadata / Notes
+###########################################################################################
+2.1.1 ORB metadata / content
 
 The first parameter must always be "ORB_METADATA_START=" and the last one must be "ORB_METADATA_END="
-It is allowed to change the order of all parameters (with the exception of ORB_METADATA_START and ORB_METADATA_END) or ommit the optional parameters, but it is recommended to leave the order unchanged.
+It is valid to change the order of all parameters (with the exception of ORB_METADATA_START and ORB_METADATA_END)
+or omit the optional parameters, but it is recommended to leave the order unchanged.
 
-It is also allowed to insert other content (comments, etc) between the parameters, like this:
+No parameter should have quotes around the value, example:
+Valid:    ORB_SPECIFICATION_VERSION=0.0.2
+Invalid:  ORB_SPECIFICATION_VERSION="0.0.2"
+
+	
+        ORB_METADATA_START=
+                This parameter is required.
+                Indicates the start of a block of metadata.
+                It should have no value after the equal sign.
+                Valid example:
+                                ORB_METADATA_START=
+
+
+        ORB_SPECIFICATION_VERSION=
+                This parameter is required.
+                This parameter takes the version of the "ORB Specification"
+                that the file is compatible with.
+                Current valid values: 0.0.2
+                Valid example:
+                        ORB_SPECIFICATION_VERSION=0.0.2
+
+        ORB_TOTAL_SIZE_BYTES=
+                This parameter is required.
+                The total size of the ISO/ORB, in bytes
+                Valid example:
+                        ORB_TOTAL_SIZE_BYTES=25209486
+
+
+        ORB_CREATION_TIMESTAMP_UNIX=
+                This parameter is required.
+                The number of seconds since the Unix epoch,
+                at the time of the file creation.
+                In practice it is the output of the command:
+                date +%s
+                This value must always be an integer.
+                Valid example:
+                        ORB_CREATION_TIMESTAMP_UNIX=1452127008
+
+        ORB_CREATION_TIMESTAMP_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND=
+                This parameter is required.
+                The date when the ORB file was created,
+                in the format YEAR-MONTH-DAY-MINUTE-SECOND
+                This value must be an exact match
+                to the parameter ORB_CREATION_TIMESTAMP_UNIX
+                In practice it is the output of the command:
+                        date -d @"$ORB_CREATION_TIMESTAMP_UNIX" "+%Y-%m-%d-%H-%M-%S"
+                (We convert the value of ORB_CREATION_TIMESTAMP_UNIX, so they both match)
+              Valid example: (file created in the last second of 2015)
+              ORB_CREATION_TIMESTAMP_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND=2015-12-31-23-59-59
+
+
+        ORB_FILESYSTEM=
+                This parameter is required.
+                The filesystem used for the ORB file.
+                At this time the only valid value is ISO9660
+                Valid example:
+                        ORB_FILESYSTEM=ISO9660
+
+
+        ORB_CONTAINS_SQUASHFS=
+                If the ISO/ contains the file app.squashfs,
+                this parameter is required and must be set to "true".
+                If app.squashfs is not present, the value can be omitted.
+                Valid examples:
+                        ORB_CONTAINS_SQUASHFS=
+                        ORB_CONTAINS_SQUASHFS=true
+                        ORB_CONTAINS_SQUASHFS=false
+
+        ORB_APP_HAS_GUI=
+                This parameter is optional.
+                Indicates if the App functions in a graphical manner, for example, in X11.
+                Valid examples:
+                        ORB_APP_HAS_GUI=
+                        ORB_APP_HAS_GUI=true
+                        ORB_APP_HAS_GUI=false
+
+
+        ORB_APP_REQUIRES_CLI=
+                This parameter is optional.
+                Indicates if the App requires running in a terminal.
+                Valid examples:
+                        ORB_APP_REQUIRES_CLI=
+                        ORB_APP_REQUIRES_CLI=true
+                        ORB_APP_REQUIRES_CLI=false
+
+
+        ORB_IS_PORTABLE_APP=
+                This parameter is optional.
+                Indicates if the App works in "portable mode".
+                In practice, this will allow the scripts to enable the portable_home,
+                if applicable.
+                Valid examples:
+                        ORB_IS_PORTABLE_APP=
+                        ORB_IS_PORTABLE_APP=true
+                        ORB_IS_PORTABLE_APP=false
+
+
+        ORB_IS_INSTALLER=
+                This parameter is optional.
+                Indicates if the App is an installer, as opposed to a "Portable App".
+                Valid examples:
+                        ORB_IS_INSTALLER=
+                        ORB_IS_INSTALLER=true
+                        ORB_IS_INSTALLER=false
+
+
+        ORB_METADATA_END=
+                This parameter is required.
+                Indicates the block of metadata information has ended.
+                It should have no value after the equal sign.
+                Valid example:
+                        ORB_METADATA_END=
+
+
+Note: The metadata must be in the first 100 lines of the .orb files,
+      ideally right after the first line: #!/bin/bash
+      If the metadata is after the 100th line, it will be ignored by ORB-Launcher
+
+###########################################################################################
+2.1.3 ORB metadata / Additional notes
+
+
+It is also valid to insert other content (comments, etc) between the parameters, like this:
 
 ORB_METADATA_START=
 ORB_SPECIFICATION_VERSION=0.0.2
@@ -162,20 +331,22 @@ ORB_CREATION_TIMESTAMP_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND=2016-01-07-00-36-48
 ORB_FILESYSTEM=ISO9660
 ORB_METADATA_END=
 
-However, a line with a parameter must only contain the parameter plus the corresponding information, so the following is not allowed:
+However, a line with a parameter must only contain the parameter plus
+the corresponding information, so the following is invalid:
 
 	ORB_TOTAL_SIZE_BYTES=2520948600 # This is a big app because we bundle all the artwork
 
-Not allowed:
-	# This is a big app because we bundle all the artwork	#	ORB_TOTAL_SIZE_BYTES=2520948600
+Invalid:
+# This is a big app because we bundle all the artwork #  ORB_TOTAL_SIZE_BYTES=2520948600
 
 	
-The parameter must also be right at the start of a line, so the following is not allowed:
+The parameter must also be right at the start of a line, so the following is invalid:
 	
-	#ORB_TOTAL_SIZE_BYTES=2520948600
+#ORB_TOTAL_SIZE_BYTES=2520948600
 
 
-###########################################################################################################################
+
+###########################################################################################
 2.1.3 ORB metadata / Examples
 
 Example of the first 15 lines of an ORB file:
@@ -188,17 +359,58 @@ ORB_TOTAL_SIZE_BYTES=2820948
 ORB_CREATION_TIMESTAMP_UNIX=1452127008
 ORB_CREATION_TIMESTAMP_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND=2016-01-07-00-36-48
 ORB_FILESYSTEM=ISO9660
-ORB_CONTAINS_SQUASHFS=TRUE
-ORB_REQUIRES_ROOT=FALSE
-ORB_APP_HAS_GUI=TRUE
-ORB_APP_REQUIRES_CLI=FALSE
-ORB_IS_PORTABLE_APP=TRUE
-ORB_IS_INSTALLER=FALSE
+ORB_CONTAINS_SQUASHFS=true
+ORB_REQUIRES_ROOT=false
+ORB_APP_HAS_GUI=true
+ORB_APP_REQUIRES_CLI=false
+ORB_IS_PORTABLE_APP=true
+ORB_IS_INSTALLER=false
 ORB_METADATA_END=
 
+###########################################################################################
+1. - "Portable Mode" / Portable Home / portable_home
 
-###########################################################################################################################
-How it all works (with ORB-Launcher installed)
+If an .orb file is defined as a "Portable App"
+(has the metadata parameter ORB_IS_PORTABLE_APP=true ), it means that .orb can be used
+in "portable mode".
+
+If an App has the parameter "ORB_IS_PORTABLE_APP" defined to "true", AND a folder named
+portable_home exists in the same folder of the .orb file, then the App will enter
+"Portable Mode" and will save its data/contents into the "portable_home" folder.
+
+Example 1:
+        App Firefox.orb in folder /media/USB
+        with metadata defined as ORB_IS_PORTABLE_APP=true
+	Folder /media/USB/portable_home exists
+        Then the App will automatically save data to /media/USB/portable_home
+
+Example 2:
+        App Firefox.orb in folder /media/USB
+        with metadata defined as ORB_IS_PORTABLE_APP=true
+	Folder /media/USB/portable_home DOES NOT exist
+        Then the App will save data in the normal way, to $HOME
+
+Example 3:
+        App virtualbox_installer.orb in folder /media/USB
+        with metadata defined as ORB_IS_PORTABLE_APP=false
+        Folder /media/USB/portable_home exists
+        App will ignore the portable_home folder, and (if necessary) save data to $HOME
+
+
+
+Note 1:
+        The "portable_home" method works both when using the ORB-Launcher or running the .orb
+        file directly on the terminal (which will trigger the "ORB embedded script").
+
+Note 2:
+        The "portable_home" will not be activated if the ORB/ISO is manually mounted
+        and then the user tried to run autorun.sh from the ORB/ISO.
+        The "portable_home" will also not be activated if the App is extracted from the
+        ISO/ORB and then executed via autorun.sh
+
+
+###########################################################################################
+1. How it all works (with ORB-Launcher installed)
 
 If a user as the ORB Launcher installed, the following will happen:
 Files with the .orb extension are associated with the ORB-Launcher, so the ORB-Launcher will automatically start after the user double-clicks the .orb file
@@ -209,7 +421,7 @@ Files with the .orb extension are associated with the ORB-Launcher, so the ORB-L
 	3 - The ORB/ISO is mounted with FUSE/fuseiso
 	4 - The file autorun.sh is launched from inside the mounted ISO
 
-For compressed ORB files (files that contain the parameter: ORB_CONTAINS_SQUASHFS=TRUE) there is an additional step
+For compressed ORB files (files that contain the parameter: ORB_CONTAINS_SQUASHFS=true) there is an additional step
 
 
 	1 - ORB-Launcher checks to see if the file is "whitelisted"
@@ -219,7 +431,7 @@ For compressed ORB files (files that contain the parameter: ORB_CONTAINS_SQUASHF
 	5 - The file autorun.sh is launched from inside the mounted squashfs
 
 	
-###########################################################################################################################
+###########################################################################################
 Alternative launcher - For systems without the "ORB Launcher"
 
 If a user does not have the ORB-Launcher installed on their system, they can run the .orb app in an alternative way.
@@ -230,7 +442,9 @@ For example:
 		/home/alex/firefox.orb
 
 Explanation:
-This will mark the file as executable and then launch it. (Because the first line of an .orb file starts with #!/bin/bash the .orb will be recognized as a bash script and run)
+This will mark the file as executable and then launch it.
+Because the first line of an .orb file starts with #!/bin/bash the
+.orb will be recognized as a bash script and run)
 
 
 
@@ -239,10 +453,11 @@ Or as an alternative, just run:
 		bash /home/alex/firefox.orb
 
 Explanation:
-This will directly launch the .orb with bash, not requiring the .orb to be marked as executable
+This will directly launch the .orb with bash, not requiring the .orb to be marked
+as executable
 
-###########################################################################################################################
-Alternative launcher - Technical explanation
+###########################################################################################
+ORB Embedded Script - An alternative launcher
 
 When a user tries to run an .orb file with the following commands:
 
@@ -254,7 +469,7 @@ This is what happens:
 
  1 - Because the first line of an .orb file starts with #!/bin/bash (the "Embedded script") the .orb will be recognized as a bash script and run with bash
  2 - The "Embedded script" will then "scan" the ORB/ISO and extract the file "0_mounting_tools.txt" from the ISO/ORB.
-				This is possible (in bash AND without first mounting the ISO) because the ISO9660 format stores the content of files in a sequencial manner.
+				This is possible (in bash AND without first mounting the ISO) because the ISO9660 format stores the content of files in a sequential manner.
 				Knowing this, we have packaged fuseiso/squashfuse (the "mounting tools") into a tar.gz file,
 				converted it into base64, and added a "starting string" and "Ending string" to the file,
 				so bash can use grep and other tools to recognize the start and end of the "text" (see example bellow)
@@ -272,9 +487,7 @@ Partial contents of an example of "0_mounting_tools.txt"
 _START_ORB_MOUNTING_TOOLS_BASE64_
 H4sIAMHLgVYAA9R9e3wURfL4bFhggciuGCFqPBddNWjUBCImGs+AeakBg4aA5yOEPEh0SXLJLi8j
 BDaLjMNqVMTnKSqeqKgoqIgoSYAEEDVBBBRQTlFnWR4RFAJK9ldVXbM7O8B9v5/P7/fPz7uhtqZ7
-(...)
-(Some lines ommited)
-(...)
+(some lines omitted)
  dP2wKKoZggiqMUKNHVBNdsxYJkss1fQBcJkCx0J3wZSgZ8Z6LJCmy3woMUL6MU9lZD8lPXasMj0+
 XB5IOG0LMoTpTIsjzCKtmZQrmy3zjEYSP2twzQzRJQNKKMuAJeJpBn/LKwLs8thnFhWk2HixAN40
 e/XP1z9f/3z98/XP18d5/T9SEmc6AGgMAA==
@@ -283,15 +496,80 @@ _END_ORB_MOUNTING_TOOLS_BASE64_
  
  
  
-###########################################################################################################################
-Copyright of this "ORB Specification text"
-####################################
+###########################################################################################
+1. Extracting/Inspecting the contents of an ORB/ISO file
+
+Notes:
+        Any application capable of opening .iso (ISO9660) files should be able to open .orb
+        files, however, you should first add the .iso extension to the file, to make it
+        easier for the application to recognise the filetype.
+                Example:
+                Rename the file "Firefox_portable.orb" to "Firefox_portable.orb.iso"
+
+
+        Software for Linux-based systems:
+                        Disk Image Mounter ( gnome-disk-image-mounter )
+                        fuseiso (free / open-source)
+                        fuseiso9660
+                        (GNOME) Archive Manager ( file-roller )
+                        mount
+
+
+        Software for Windows:
+                        Windows 8 (native support) - just double-click an .iso file
+                        Windows 8.1 (native support) - just double-click an .iso file
+                        Windows 10 (native support) - just double-click an .iso file
+                        Virtual CloneDrive (free / closed-source)
+                        Daemon Tools Lite (free / closed-source)
+                        WinRAR (commercial / closed-source)
+                        WinZip (commercial / closed-source)
+
+        Software for Mac OS X:
+                        (native support) Just double-click an .iso file
+
+Note:
+        To make is easier for anyone inspecting an .orb file, it is recommended,
+        on Windows systems, to enable the display of all file extensions:
+                https://support.microsoft.com/en-us/kb/865219
+
+###########################################################################################
+1. Extracting/Inspecting the contents of app.squashfs
+
+        For Squashfs files, the app.squashfs file uses the SQUASHFS version 4,
+        So it is necessary an application capable of supporting that version.
+
+
+        Software for Linux-based systems:
+                Disk Image Mounter ( gnome-disk-image-mounter )
+                squashfuse (free / open-source)
+                7-Zip (with wine) (free / open-source)
+                Ark - if the program says "Unable to determine Archive type",
+                        choose the option "raw CD image".
+                mount (requires Linux kernel that supports squashfs 4)
+
+        Software for Windows:
+                7-Zip (free / open-source)
+                PeaZip (free / open-source)
+                unsquashfs.exe from "SquashFS 4.0 Cygwin" (free / open-source) (URL below)
+
+        "SquashFS 4.0 Cygwin" can be downloaded from:
+         http://fragilematter.blogspot.com/2010/02/squashfs-tools-40-windows-binaries.html
+
+        Software for Mac OS X:
+                squashfuse (free / open-source)
+
+###########################################################################################
+Copyright
+
 
 Copyright / 2016 / Orbital-Apps.com
 
-Permission is granted to distribute this specification text, provided all contents remain unmodified/unedited.
+Permission is granted to distribute this specification text,
+provided all contents remain unmodified/unedited.
 
-###########################################################################################################################
+
+
+###########################################################################################
 References and credits
-######################
+
 (1)	http://www.rtems.com/wiki/index.php/ISO9660_Filesystem (now offline)
