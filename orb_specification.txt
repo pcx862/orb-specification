@@ -1,14 +1,14 @@
 ###########################################################################################
 #                                                                                         #
-#                       ORB Specification 0.0.2 (BETA/DRAFT)                              #
+#                       ORB Specification 0.0.3 (BETA/DRAFT)                              #
 #                                                                                         #
 #                                 OPEN RUNNABLE BUNDLE                                    #
 #                                                                                         #
 ###########################################################################################
 #                                                                                         #
-#       Revision 3                                                                        #
+#       Revision 1                                                                        #
 #                                                                                         #
-#       Publishing date: 16th January, 2016                                               #
+#       Publishing date: June, 2016                                                       #
 #                                                                                         #
 #       Homepage: www.orbital-apps.com                                                    #
 #                                                                                         #
@@ -32,7 +32,7 @@ Table of contents
 5.   "Portable Mode"
 6.1. How it all works (with ORB-Launcher installed)
 6.2. Alternative launcher - For systems without the "ORB Launcher"
-6.3. ORB Embedded Script - An alternative launcher
+6.3. ORB Embedded Launcher - An alternative launcher
 7.1. Extracting/Inspecting the contents of an ORB/ISO file
 7.2. Extracting/Inspecting the contents of app.squashfs
 8.   Credits
@@ -42,19 +42,21 @@ Table of contents
 ###########################################################################################
 1.   Intro 
 
-An ORB ( .orb ) file is in reality an ISO9660 file (commonly known as .iso files),
+An ORB executable ( .orb ) file is in reality an ISO9660 file (.iso),
 with specific contents.
 
 Inside the ISO there is a script named autorun.sh
 (or just "autorun" - both variants are supported) and an application.
-The application is either in a folder (commonly named "app") or in a compressed file,
-named "app.squashfs".
+The application is typically either in a folder (commonly named "app")
+or in a compressed file, named "app.squashfs".
 
 When a user has the "ORB Launcher" installed on their system and they
 double-click any .orb file, the ISO/ORB is automatically mounted and the autorun.sh is
 executed, launching the application.
 
-
+If the user does not have the "ORB Launcher",
+the .orb executable still works natively on the system,
+being recognized as an ELF executable
 
 ###########################################################################################
 2.   Definitions
@@ -65,7 +67,7 @@ executed, launching the application.
                 filesystem.
 
 
-	ORB / ISO
+	    ORB / ISO
                 Same as above, sometimes ORB and ISO are used
                 interchangeably in this document,
                 as currently all ORB files are ISO9660 files.
@@ -93,9 +95,9 @@ executed, launching the application.
                 App contained inside.
 
 
-        ORB Embedded Script / ORB-Embedded-Script
-                A script in the ISO Header which allows the whole ORB/ISO file to be
-                recognised as a script, allowing it to be executed even on a system without
+        ORB Embedded Launcher / ORB-Embedded-Launcher
+                An ELF executable in the ISO Header which allows the whole ORB/ISO file to be
+                recognised as a native ELF, allowing it to be executed even on a system without
                 the ORB Launcher
 
         Portable Home / portable_home
@@ -109,34 +111,21 @@ executed, launching the application.
 ###########################################################################################
 3.   ISO contents - Intro
 
-The iso file will contain the following contents:
+The iso file will typically contain the following contents:
 
-0_mounting_tools.txt
 app.squashfs
 app_logo.png
 autorun.inf
 autorun / autorun.sh
 (possibly other contents)
 
-
-
-
-
-
-
-
-
-
-
-
-
 Example of an ORB file:
 	 _______________________________________________________________________________
 	|           ( ISO Header )             |       ( ISO contents )                 |
 	|         (always 32768 bytes)         |                                        |
 	|                                      |                                        |
-	|  #!/bin/bash                         |                                        |
-	|  # "Embedded Launcher" bash script   |  0_mounting_tools.txt                  |
+	|                                      |                                        |
+	| "Embedded Launcher" (ELF executable) |                                        |
 	|                                      |                                        |
 	|  ORB_METADATA_START=                 |  app.squashfs                          |
 	|  ORB_SPECIFICATION_VERSION=0.0.2     |                                        |
@@ -144,12 +133,12 @@ Example of an ORB file:
 	|  (...)                               |                                        |
 	|  ORB_METADATA_END=                   |                                        |
 	|                                      |                                        |
-	|  echo "Starting the script..."       |                                        |
-	|  (...)                               |                                        |
-	|  mount_iso                           |                                        |
-	|  run_autorun_from_iso                |                                        |
-	|  (...)                               |                                        |
-	|  exit                                |                                        |
+	|                                      |                                        |
+	|                                      |                                        |
+	|                                      |                                        |
+	|                                      |                                        |
+	|                                      |                                        |
+	|                                      |                                        |
 	|______________________________________|________________________________________|
 
 (...)  --> In this context, this represents a new line or omitted content
@@ -167,7 +156,7 @@ Alternative representation:
     /                                         \  /                                    \
    /___________________________________________\/______________________________________\
    |                                            |                                      |
-   |#!/bin/bash (ORB metadata) (rest of script) | app.squashfs + autorun.sh (+ others) |
+   |ELF + ORB metadata                          | app.squashfs + autorun.sh (+ others) |
    |____________________________________________|______________________________________|
 
 
@@ -179,8 +168,8 @@ If the ORB file uses compression, the app will be compressed into the file app.s
 in the SQUASHFS 4 format
 
 In this case the autorun.sh inside the ISO will not (directly) run the app,
-but instead it will use the tools from the file 0_mounting_tools.txt
-(see section 6.3. ORB Embedded Script - An alternative launcher),
+but instead it will use the tools from the folder mounting_tools
+(see section 6.3. ORB Embedded Launcher - An alternative launcher),
 it will mount the app.squashfs file and launch the autorun.sh file contained inside.
 
 
@@ -193,22 +182,16 @@ The header of ISO files has a size of 32768 bytes
 ( http://www.rtems.com/wiki/index.php/ISO9660_Filesystem ) and is typically
 left blank/empty.
 
-In ORB files the ISO header is used to store an "Embedded Launcher" bash script which
-itself contains metadata.
+In ORB files the ISO header is used to store an "Embedded Launcher" executable and
+ORB Metadata
 
 
 
 ###########################################################################################
 4.1. ORB metadata - intro
 
-The very first line of an ORB file is the defining the file as a script,
-and it must be this:
 
-#!/bin/bash
-
-Note: Currently all ORB files must use the specific line above.
-
-The following lines of the ORB file should contain the following parameters:
+The lines of the ORB file should contain the following parameters:
 
 ORB_METADATA_START=
 ORB_SPECIFICATION_VERSION=
@@ -354,9 +337,8 @@ Invalid:  ORB_SPECIFICATION_VERSION="0.0.2"
                         ORB_METADATA_END=
 
 
-Note: The metadata must be in the first 100 lines of the .orb files,
-      ideally right after the first line: #!/bin/bash
-      If the metadata is after the 100th line, it will be ignored by ORB-Launcher
+Note: The metadata must be in ISO Header,
+which is in the first 32768 bytes of the .orb file
 
 
 
@@ -393,10 +375,8 @@ The parameter must also be right at the start of a line, so the following is inv
 ###########################################################################################
 4.4. ORB metadata - Examples
 
-Example of the first 15 lines of an ORB file:
+Example of ORB Metadata:
 
-#!/bin/bash
-# Web: www.orbital-apps.com
 ORB_METADATA_START=
 ORB_SPECIFICATION_VERSION=0.0.2
 ORB_TOTAL_SIZE_BYTES=2820948
@@ -475,23 +455,15 @@ If a user as the ORB Launcher installed, the following will happen:
 Files with the .orb extension are associated with the ORB-Launcher,
 so the ORB-Launcher will automatically start after the user double-clicks the .orb file
 	
-	
-	1 - ORB-Launcher checks to see if the file is "whitelisted"
-	2 - If the file is NOT whitelisted, as an additional step,
-            the ORB-Launcher asks the user to confirm that they want to run the App
-	3 - The ORB/ISO is mounted with FUSE/fuseiso
-	4 - The file autorun.sh is launched from inside the mounted ISO
+	1 - The ORB/ISO is mounted with FUSE/fuseiso
+	2 - The file autorun.sh is launched from inside the mounted ISO
 
 For compressed ORB files (files that contain the parameter: ORB_CONTAINS_SQUASHFS=true),
 there is an additional step
 
-
-	1 - ORB-Launcher checks to see if the file is "whitelisted"
-	2 - If the file is NOT whitelisted, as an additional step,
-            the ORB-Launcher asks the user to confirm that they want to run the App
-	3 - The ORB/ISO is mounted with FUSE/fuseiso
-	4 - if app.squashfs exists inside the ISO, that file is mounted with squashfuse
-	5 - The file autorun.sh is launched from inside the mounted squashfs
+	1 - The ORB/ISO is mounted with FUSE/fuseiso
+	2 - if app.squashfs exists inside the ISO, that file is mounted with squashfuse
+	3 - The file autorun.sh is launched from inside the mounted squashfs
 
 
 	
@@ -506,27 +478,9 @@ For example:
 		chmod +x /home/alex/firefox.orb
 		/home/alex/firefox.orb
 
-Explanation:
-This will mark the file as executable and then launch it.
-Because the first line of an .orb file starts with #!/bin/bash the
-.orb will be recognized as a bash script and run)
-
-
-
-Or as an alternative, just run:
-
-		bash /home/alex/firefox.orb
-
-
-
-Explanation:
-This will directly launch the .orb with bash, not requiring the .orb to be marked
-as executable
-
-
 
 ###########################################################################################
-6.3. ORB Embedded Script - An alternative launcher
+6.3. ORB Embedded Launcher - An alternative launcher
 
 When a user tries to run an .orb file with the following commands:
 
@@ -536,37 +490,9 @@ When a user tries to run an .orb file with the following commands:
 
 This is what happens:
 
- 1 - Because the first line of an .orb file starts with #!/bin/bash (the "Embedded script")
-     the .orb will be recognized as a bash script and run with bash
- 2 - The "Embedded script" will then "scan" the ORB/ISO and
-     extract the file "0_mounting_tools.txt" from the ISO/ORB.
-     This is possible (in bash AND without first mounting the ISO) because the ISO9660
-     format stores the content of files in a sequential manner.
-     Knowing this, we have packaged fuseiso/squashfuse (the "mounting tools") into
-     a tar.gz file, converted it into base64, and added a "starting string" and
-     "Ending string" to the file, so bash can use grep and other tools to recognize the
-     start and end of the "text" (see example bellow)
-				
-				
- 3- Once the file 0_mounting_tools.txt is extracted,
-    the script just needs to remove the "start string" and the "end string"
-    and convert from base64 back into the file mounting_tools.tar.gz
-    Which is then easily extracted with tar
- 4- Now that fuseiso and squashfuse are available,
-    the "Embedded script" just needs to mount the ISO with fuseiso and run "autorun.sh"
-
-
-Partial contents of an example of "0_mounting_tools.txt"
-
-
-_START_ORB_MOUNTING_TOOLS_BASE64_
-H4sIAMHLgVYAA9R9e3wURfL4bFhggciuGCFqPBddNWjUBCImGs+AeakBg4aA5yOEPEh0SXLJLi8j
-BDaLjMNqVMTnKSqeqKgoqIgoSYAEEDVBBBRQTlFnWR4RFAJK9ldVXbM7O8B9v5/P7/fPz7uhtqZ7
-(some lines omitted)
- dP2wKKoZggiqMUKNHVBNdsxYJkss1fQBcJkCx0J3wZSgZ8Z6LJCmy3woMUL6MU9lZD8lPXasMj0+
-XB5IOG0LMoTpTIsjzCKtmZQrmy3zjEYSP2twzQzRJQNKKMuAJeJpBn/LKwLs8thnFhWk2HixAN40
-e/XP1z9f/3z98/XP18d5/T9SEmc6AGgMAA==
-_END_ORB_MOUNTING_TOOLS_BASE64_
+ 1 - Because the ISO contains and ELF in the Header (the "Embedded ELF")
+     the .orb will be recognized as a native executable
+ 2 - The "Embedded ELF" will then mount and run the contents of the ISO
   
  
 
